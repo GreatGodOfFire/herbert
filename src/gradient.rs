@@ -1,9 +1,22 @@
 use crate::features::Features;
+use rayon::prelude::*;
 
-pub fn compute_gradient(data: &mut Vec<Features>, gradient: &mut [f64], params: &[f64], k: f64) {
-    for features in data {
-        single_gradient(features, gradient, &params, k);
-    }
+pub fn compute_gradient(data: &mut Vec<Features>, params: &[f64], k: f64) -> Vec<f64> {
+    data.par_iter()
+        .map(|x| {
+            let mut gradient = vec![0.0; params.len()];
+            single_gradient(x, &mut gradient, &params, k);
+            gradient
+        })
+        .reduce(
+            || vec![0.0; params.len()],
+            |mut a, b| {
+                for (a, b) in a.iter_mut().zip(b.iter()) {
+                    *a += b;
+                }
+                a
+            },
+        )
 }
 
 fn single_gradient(features: &Features, gradient: &mut [f64], params: &[f64], k: f64) {

@@ -11,6 +11,8 @@ mod gradient;
 mod init;
 mod marlinformat;
 
+const EPOCHS: usize = 10000;
+
 fn main() {
     let mut weights = vec![];
 
@@ -43,16 +45,24 @@ fn main() {
     dbg!(w, d, l, n);
 
     let k = optimal_k(&dataset, &weights);
-    let rate = 0.001;
+    let rate = 200.0 / n as f64;
 
     println!("K = {k}");
 
-    for i in 0..1000 {
-        let mut gradient = vec![0.0; weights.len()];
-        compute_gradient(&mut dataset, &mut gradient, &weights, k);
+    // let mut adagrad = vec![0.0; weights.len()];
+
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(24)
+        .build_global()
+        .unwrap();
+
+    for i in 1..=EPOCHS {
+        let gradient = compute_gradient(&mut dataset, &weights, k);
 
         for i in 0..gradient.len() {
-            weights[i] += k * gradient[i] * rate;
+            // adagrad[i] += (2.0 * gradient[i]).powi(2);
+
+            weights[i] += 2.0 * k * gradient[i] * rate;
         }
 
         println!("Epoch {i}: E = {}", eval_errors(&dataset, &weights, k));
